@@ -34,31 +34,39 @@ export class AppComponent {
     reader.readAsArrayBuffer(file);
   }
    formatQuranData(inputData: any[]): any {
-    const formattedData: any = { quran_data: [] };
+    const formattedData: any = { quran_db: [] };
     let currentSurah: any = null;
     let currentAyah: any = null;
+    let id: any = 0;
   
-    inputData.forEach((item) => {
+    inputData.forEach((item,index) => {
       if (item.Ayah_No === 0 && !currentSurah) {
         // Start a new surah
+        
         currentSurah = {
+          surah_id:id,
           surah_name_english: item.surah_name_english,
           surah_name_arabic: item.surah_name_arabic,
           surah_name_english_translation: item.surah_name_english_translation,
           surah_name_Malayalam_translation: item.surah_name_Malayalam_translation,
           ayah: []
         };
-        formattedData.quran_data.push(currentSurah);
+        formattedData.quran_db.push(currentSurah);
+      
       } else if (item.Ayah_No === 0 && currentSurah?.surah_name_english !== item.surah_name_english) {
+        id++;
         // Start a new surah if the name changes
         currentSurah = {
+          
+          surah_id:id,
           surah_name_english: item.surah_name_english,
           surah_name_arabic: item.surah_name_arabic,
           surah_name_english_translation: item.surah_name_english_translation,
           surah_name_Malayalam_translation: item.surah_name_Malayalam_translation,
           ayah: []
         };
-        formattedData.quran_data.push(currentSurah);
+      
+        formattedData.quran_db.push(currentSurah);
       }
   
       if (item.arabic_ayah_line) {
@@ -93,7 +101,7 @@ export class AppComponent {
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'formatted_quran_data.json';
+    link.download = 'formatted_quran_db.json';
     link.click();
     
     window.URL.revokeObjectURL(url);
