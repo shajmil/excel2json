@@ -23,13 +23,24 @@ export class AppComponent {
     reader.onload = (e: any) => {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      this.jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: true });
-      console.log(this.jsonData);
-      const formattedData = this.formatQuranData(this.jsonData);
+      
+      // Initialize array to store all sheets' data
+      let allSheetsData: any[] = [];
+      
+      // Process all sheets
+      workbook.SheetNames.forEach((sheetName, sheetIndex) => {
+        const worksheet = workbook.Sheets[sheetName];
+        const sheetData = XLSX.utils.sheet_to_json(worksheet, { raw: true });
+        // Add sheet index as metadata
+        sheetData.forEach((item: any) => {
+          item._sheetIndex = sheetIndex; // Sheet 1 will be index 0, Sheet 2 will be 1, etc.
+        });
+        allSheetsData = allSheetsData.concat(sheetData);
+      });
 
-      this.downloadFormattedData(this.jsonData)
+      this.jsonData = allSheetsData;
+      const formattedData = this.formatQuranData(this.jsonData);
+      this.downloadFormattedData(this.jsonData);
     };
     reader.readAsArrayBuffer(file);
   }
@@ -37,14 +48,15 @@ export class AppComponent {
     const formattedData: any = { quran_db: [] };
     let currentSurah: any = null;
     let currentAyah: any = null;
-    let id: any = 0;
+    let processedSurahs = new Set(); // To track processed surahs
   
-    inputData.forEach((item,index) => {
-      if (item.Ayah_No === 0 && !currentSurah) {
-        // Start a new surah
+    inputData.forEach((item) => {
+      // Only create a new surah if we haven't processed this sheet index before
+      if (item.Ayah_No === 0 && !processedSurahs.has(item._sheetIndex)) {
+        processedSurahs.add(item._sheetIndex);
         
         currentSurah = {
-          surah_id:id,
+          surah_id: item._sheetIndex,
           surah_name_english: item.surah_name_english,
           surah_name_arabic: item.surah_name_arabic,
           surah_name_english_translation: item.surah_name_english_translation,
@@ -52,40 +64,27 @@ export class AppComponent {
           ayah: []
         };
         formattedData.quran_db.push(currentSurah);
-      
-      } else if (item.Ayah_No === 0 && currentSurah?.surah_name_english !== item.surah_name_english) {
-        id++;
-        // Start a new surah if the name changes
-        currentSurah = {
-          
-          surah_id:id,
-          surah_name_english: item.surah_name_english,
-          surah_name_arabic: item.surah_name_arabic,
-          surah_name_english_translation: item.surah_name_english_translation,
-          surah_name_Malayalam_translation: item.surah_name_Malayalam_translation,
-          ayah: []
-        };
-      
-        formattedData.quran_db.push(currentSurah);
       }
   
-      if (item.arabic_ayah_line) {
-        // Start a new ayah
-        currentAyah = {
-          arabic_ayah_line: item.arabic_ayah_line,
-          english_line_translation: item.english_line_translation,
-          Malayalam_line_translation: item.Malyalam_line_translation,
-          arabic_ayah_word: [],
-          malayalam_ayah_word: [],
-          english_ayah_word: []
-        };
-        currentSurah.ayah.push(currentAyah);
-      }
-  
-      if (item.arabic_ayah_word) {
-        currentAyah.arabic_ayah_word.push(item.arabic_ayah_word);
-        currentAyah.malayalam_ayah_word.push(item.Malyalam_ayah_word);
-        currentAyah.english_ayah_word.push(item.english_ayah_word);
+      // Only process ayahs for the current surah
+      if (currentSurah && item._sheetIndex === currentSurah.surah_id) {
+        if (item.arabic_ayah_line) {
+          currentAyah = {
+            arabic_ayah_line: item.arabic_ayah_line,
+            english_line_translation: item.english_line_translation,
+            Malayalam_line_translation: item.Malyalam_line_translation,
+            arabic_ayah_word: [],
+            malayalam_ayah_word: [],
+            english_ayah_word: []
+          };
+          currentSurah.ayah.push(currentAyah);
+        }
+    
+        if (item.arabic_ayah_word) {
+          currentAyah.arabic_ayah_word.push(item.arabic_ayah_word);
+          currentAyah.malayalam_ayah_word.push(item.Malyalam_ayah_word);
+          currentAyah.english_ayah_word.push(item.english_ayah_word);
+        }
       }
     });
   
