@@ -1,1 +1,30 @@
-<input type="file" (change)="onFileChange($event)" accept=".xlsx, .xls">
+<div class="container">
+    <div class="converter-card">
+        <div class="header">
+            <h1>Excel to JSON Converter</h1>
+            <p>Upload your Quran Excel file to convert it to JSON format</p>
+        </div>
+
+        <div class="upload-section">
+            <input type="file" #fileInput (change)="onFileChange($event)" accept=".xlsx, .xls" class="hidden">
+
+            <div class="upload-content">
+                <i class="fas fa-file-excel"></i>
+                <h3>Choose your Excel file</h3>
+                <p>or</p>
+                <button class="upload-btn" (click)="fileInput.click()">
+          <i class="fas fa-upload"></i> Browse Files
+        </button>
+            </div>
+        </div>
+
+        <div *ngIf="jsonData" class="result-section">
+            <div class="result-header">
+                <h3>Converted JSON</h3>
+            </div>
+            <div class="json-preview">
+                <pre>{{jsonData | json}}</pre>
+            </div>
+        </div>
+    </div>
+</div>
